@@ -24,7 +24,7 @@ BLARE combines a custom-designed PCB, a multi-button interface, an OLED/LCD disp
 
 ```
 
-## 🗓️ PROGRESS 
+## 🗓️ WHAT IT LOOKS LIKE 
 
 <img width="873" height="665" alt="image" src="https://github.com/user-attachments/assets/68a9f21d-58cc-4c5a-812f-fa7466060fb6" />
 
