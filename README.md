@@ -20,3 +20,18 @@ BLARE combines a custom-designed PCB, a multi-button interface, an OLED/LCD disp
  |  Mechanical   |--|  XIAO ESP32-C3 Board  |--| Active Buzzer |
  |  Switches (4) |  |   (Core Controller)   |  | (Audio Alarm) |
  +---------------+  +-----------------------+  +---------------+
+
+
+```
+
+### PROGRESS
+
+<img width="873" height="665" alt="image" src="https://github.com/user-attachments/assets/68a9f21d-58cc-4c5a-812f-fa7466060fb6" />
+
+
+<img width="971" height="557" alt="image" src="https://github.com/user-attachments/assets/e8c5ce47-aa11-4025-adc2-0ebd7050a1bd" />
+
+<img width="1053" height="642" alt="image" src="https://github.com/user-attachments/assets/16f5ea58-4a0b-4844-a1de-fb120608a012" />
+
+
+
