@@ -1,4 +1,4 @@
-# ⏰ BLARE — The Game-Powered Alarm Clock
+# ⏰ GameClock — The Game-Powered Alarm Clock
 
 > **"Imagine having to play a random game just to snooze your clock! Well… you don't have to imagine that anymore."**
 
