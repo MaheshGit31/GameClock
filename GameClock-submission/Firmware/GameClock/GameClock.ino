@@ -1,13 +1,3 @@
-// YourClock firmware - XIAO ESP32-C3 + ST7789 (284x76) + 4 buttons + buzzer
-//
-// Buttons:  SW1 = MENU / NEXT FIELD   SW2 = UP   SW3 = DOWN   SW4 = SNOOZE (starts a quest)
-// Clock screen: SW1 -> set time -> set alarm -> back to clock.
-// When the alarm rings, press SW4. You must win a random mini-game to snooze.
-// Fail (wrong answer / timeout) and it keeps ringing.
-//
-// The board has no RTC, so the time is lost on power-off unless you fill in WiFi below
-// (the clock then syncs from the internet at boot). The alarm time is saved in flash.
-
 #include <Adafruit_GFX.h>
 #include <Adafruit_ST7789.h>
 #include <SPI.h>
@@ -15,12 +5,10 @@
 #include <WiFi.h>
 #include <time.h>
 
-// ---------- optional WiFi time sync (leave SSID empty to disable) ----------
 const char* WIFI_SSID = "";
 const char* WIFI_PASS = "";
-const char* TZ_INFO   = "CST6CDT,M3.2.0,M11.1.0";   // US Central. Change for your zone.
+const char* TZ_INFO   = "CST6CDT,M3.2.0,M11.1.0";
 
-// ---------- pins (XIAO ESP32-C3 GPIO numbers, from the PCB) ----------
 #define TFT_SCLK 9
 #define TFT_MOSI 10
 #define TFT_RST  8
@@ -28,11 +16,10 @@ const char* TZ_INFO   = "CST6CDT,M3.2.0,M11.1.0";   // US Central. Change for yo
 #define TFT_CS   7
 #define TFT_BL   21
 #define BUZZER   20
-const uint8_t BTN[4] = {2, 3, 4, 5};   // SW1..SW4
+const uint8_t BTN[4] = {2, 3, 4, 5};
 
-// ---------- settings ----------
 #define SNOOZE_MINUTES 5
-#define MAX_SNOOZES    3      // after this many snoozes, winning a game turns the alarm OFF
+#define MAX_SNOOZES    3
 #define GAME_TIME_MS   20000
 
 Adafruit_ST7789 tft = Adafruit_ST7789(TFT_CS, TFT_DC, TFT_MOSI, TFT_SCLK, TFT_RST);
@@ -40,7 +27,6 @@ Preferences prefs;
 
 const int W = 284, H = 76;
 
-// ---------- clock state ----------
 uint32_t secOfDay = 12 * 3600;
 uint32_t lastMs = 0;
 bool newSecond = false;
@@ -60,7 +46,6 @@ uint32_t msgUntil = 0;
 uint8_t field = 0;
 uint8_t setH = 0, setM = 0;
 
-// ---------- buttons ----------
 bool held[4], evt[4];
 uint32_t lastChange[4], holdStart[4], lastRepeat[4];
 
@@ -75,12 +60,11 @@ void readButtons() {
       if (d) { evt[i] = true; holdStart[i] = now; lastRepeat[i] = now; }
     } else if (d && now - holdStart[i] > 500 && now - lastRepeat[i] > 120) {
       lastRepeat[i] = now;
-      if (state == S_SET_TIME || state == S_SET_ALARM) evt[i] = true;  // auto-repeat only when setting
+      if (state == S_SET_TIME || state == S_SET_ALARM) evt[i] = true;
     }
   }
 }
 
-// ---------- buzzer ----------
 void buzzInit() {
 #if ESP_ARDUINO_VERSION_MAJOR < 3
   ledcSetup(0, 2000, 8);
@@ -100,15 +84,14 @@ void buzz(bool on) {
 void buzzerUpdate() {
   if (!alarmRinging) { buzz(false); return; }
   uint32_t t = millis();
-  if (state == S_GAME) {                       // calmer pulse while playing, still ringing
+  if (state == S_GAME) {
     buzz((t % 1500) < 200);
-  } else {                                     // beep-beep-beep ... pause
+  } else {
     uint32_t p = t % 1400;
     buzz(p < 150 || (p >= 300 && p < 450) || (p >= 600 && p < 750));
   }
 }
 
-// ---------- drawing helpers ----------
 void printAt(int x, int y, uint8_t size, uint16_t fg, uint16_t bg, const char* s) {
   tft.setTextSize(size);
   tft.setTextColor(fg, bg);
@@ -156,7 +139,6 @@ void showMessage(const char* l1, const char* l2, uint16_t col, uint32_t ms, Stat
   state = S_MSG;
 }
 
-// ---------- alarm flow ----------
 void startRing(bool fresh) {
   alarmRinging = true;
   snoozeActive = false;
@@ -180,7 +162,6 @@ void drawRing(bool force) {
   printAt(100, 52, 2, fg, bg, "SW4: SNOOZE");
 }
 
-// ---------- mini-games ----------
 uint8_t gameType = 0;
 uint32_t gameStart = 0, gameLimit = GAME_TIME_MS;
 uint32_t lastTimeBar = 0;
@@ -213,10 +194,9 @@ void winGame() {
   }
 }
 void loseGame(const char* why) {
-  showMessage("FAILED!", why, ST77XX_RED, 1500, S_RING);   // alarm keeps ringing
+  showMessage("FAILED!", why, ST77XX_RED, 1500, S_RING);
 }
 
-// --- game 0: memory sequence ---
 uint8_t seq[4], simonPhase, simonIn;
 uint32_t simonStart;
 int simonShown;
@@ -231,7 +211,7 @@ void simonInit() {
   for (int i = 0; i < 4; i++) seq[i] = random(4);
   simonPhase = 0; simonIn = 0; simonShown = -2;
   simonStart = millis();
-  gameStart = millis(); gameLimit = 600000;   // no timeout while memorizing
+  gameStart = millis(); gameLimit = 600000;
   printAt(4, 2, 2, ST77XX_CYAN, ST77XX_BLACK, "MEMORIZE");
 }
 void simonUpdate() {
@@ -260,7 +240,6 @@ void simonUpdate() {
   }
 }
 
-// --- game 1: quick math ---
 int mathOpt[4], mathAns;
 void mathInit() {
   int a, b; bool mul = random(2);
@@ -289,7 +268,6 @@ void mathUpdate() {
   }
 }
 
-// --- game 2: button mash (SW2) ---
 int mashCount;
 #define MASH_TARGET 25
 void mashDraw() {
@@ -307,7 +285,6 @@ void mashUpdate() {
   if (evt[1]) { mashCount++; mashDraw(); if (mashCount >= MASH_TARGET) { winGame(); return; } }
 }
 
-// --- game 3: timing bar (any button) ---
 const int ZX = 122, ZW = 40, CW = 6, BY = 40, BH = 24;
 int hits, oldPos = -1;
 void timingHits() {
@@ -364,7 +341,6 @@ void updateGame() {
   if (state == S_GAME && millis() - gameStart > gameLimit) loseGame("Too slow");
 }
 
-// ---------- time sync ----------
 void syncNTP() {
   if (strlen(WIFI_SSID) == 0) return;
   printCentered(20, 2, ST77XX_WHITE, ST77XX_BLACK, "Syncing time...");
@@ -384,7 +360,6 @@ void syncNTP() {
   WiFi.mode(WIFI_OFF);
 }
 
-// ---------- main ----------
 void setup() {
   Serial.begin(115200);
   pinMode(TFT_BL, OUTPUT);
@@ -393,10 +368,9 @@ void setup() {
   pinMode(BUZZER, OUTPUT);
   buzzInit();
 
-  tft.init(76, 284);            // panel size (portrait)
-  // (this panel's (82,18) offsets are applied automatically by the library)
+  tft.init(76, 284);
   tft.invertDisplay(false);
-  tft.setRotation(1);           // landscape; use 3 if upside down
+  tft.setRotation(1);
   tft.fillScreen(ST77XX_BLACK);
 
   randomSeed(esp_random());
@@ -419,7 +393,6 @@ void loop() {
 
   readButtons();
 
-  // alarm triggers
   if (newSecond && !alarmRinging && state != S_SET_TIME && state != S_SET_ALARM) {
     if (alarmOn && secOfDay == (uint32_t)alarmH * 3600 + alarmM * 60) startRing(true);
     else if (snoozeActive && secOfDay == snoozeTarget) startRing(false);
@@ -459,7 +432,7 @@ void loop() {
 
     case S_RING:
       drawRing(false);
-      if (evt[3]) startGame();          // SNOOZE -> must win a quest
+      if (evt[3]) startGame();
       break;
 
     case S_GAME:
@@ -477,9 +450,3 @@ void loop() {
 
   buzzerUpdate();
 }
-
-
-
-
-
-
