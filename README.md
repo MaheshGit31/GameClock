@@ -37,7 +37,17 @@ GameClock has a bunch of cool stuff with a cool firmware. Stuff's below.
 
 
 
+# Controls
 
+### Switch 1 - Menu/Next field
+### Switch 2 - Up
+### Switch 3 - Down
+### Switch 4 - Snooze (starts a mini game when ringing)
+
+
+# When the alarm rings
+
+### Press Switch 4 to start a random mini-game. Win it to snooze for 5 minutes. Fail or run out of time and the alarm keeps ringing. After 3 snoozes, winning the next game turns the alarm off.
 
 
 
